@@ -12,10 +12,15 @@ router = APIRouter(prefix="/items", tags=["Items"])
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
 
 def save_image_local(file: UploadFile) -> str:
-    """Simpan gambar lokal, return URL path."""
-    ext = file.filename.split(".")[-1]
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipe file tidak didukung. Gunakan: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
     filename = f"{uuid.uuid4()}.{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     with open(filepath, "wb") as f:

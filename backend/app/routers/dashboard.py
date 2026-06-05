@@ -9,9 +9,9 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    total_hilang = db.query(models.Item).filter(models.Item.tipe == "hilang").count()
-    total_ditemukan = db.query(models.Item).filter(models.Item.tipe == "ditemukan").count()
-    total_selesai = db.query(models.Item).filter(models.Item.status == "selesai").count()
+    total_hilang = db.query(models.Item).filter(models.Item.tipe == models.ReportType.hilang).count()
+    total_ditemukan = db.query(models.Item).filter(models.Item.tipe == models.ReportType.ditemukan).count()
+    total_selesai = db.query(models.Item).filter(models.Item.status == models.ItemStatus.selesai).count()
 
     laporan_terbaru = (
         db.query(models.Item)
