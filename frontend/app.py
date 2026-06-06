@@ -1,34 +1,23 @@
 import streamlit as st
 from utils.style import GLOBAL_CSS
-from utils.api import get_me
 
 st.set_page_config(
     page_title="ReFound — Lost & Found ITS",
-    page_icon="🔍",
+    page_icon="assets/logo.png" if False else "🔍",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
-# ── Session state init ────────────────────────────────────────────────────────
-if "token" not in st.session_state:
-    st.session_state.token = None
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "page" not in st.session_state:
-    st.session_state.page = "dashboard"
+# ── Session state ─────────────────────────────────────────────────────────────
+for key, default in [("token", None), ("user", None), ("page", "dashboard")]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 
 def go_to(page: str):
     st.session_state.page = page
-    st.rerun()
-
-
-def logout():
-    st.session_state.token = None
-    st.session_state.user = None
-    st.session_state.page = "login"
     st.rerun()
 
 
@@ -37,15 +26,18 @@ def render_sidebar():
     with st.sidebar:
         # Logo
         st.markdown("""
-        <div style="padding: 1.5rem 1rem 1rem; border-bottom: 1px solid #EAECF0; margin-bottom: .5rem;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:38px;height:38px;background:#0074CC;border-radius:10px;
-                            display:flex;align-items:center;justify-content:center;
-                            font-size:20px;color:white;">🔍</div>
-                <div>
-                    <div style="font-size:16px;font-weight:700;color:#101828;line-height:1.2;">ReFound</div>
-                    <div style="font-size:11px;color:#667085;">Lost & Found ITS</div>
+        <div style="display:flex;align-items:center;gap:10px;
+                    padding:1.25rem 1rem 1rem;
+                    border-bottom:1px solid #E5E7EB;margin-bottom:.75rem;">
+            <div style="width:36px;height:36px;background:#2563EB;border-radius:8px;
+                        display:flex;align-items:center;justify-content:center;">
+                <span style="color:#fff;font-size:18px;font-weight:700;">R</span>
+            </div>
+            <div>
+                <div style="font-size:15px;font-weight:700;color:#111827;line-height:1.2;">
+                    ReFound
                 </div>
+                <div style="font-size:11px;color:#9CA3AF;">Lost & Found ITS</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -53,73 +45,93 @@ def render_sidebar():
         if st.session_state.token:
             user = st.session_state.user or {}
             nama = user.get("nama", "User")
+            email = user.get("email", "")
+            initial = nama[0].upper() if nama else "U"
 
             # User info
             st.markdown(f"""
-            <div style="padding: .75rem 1rem; margin: .5rem 0;
-                        background:#F5F7FA; border-radius:10px;">
-                <div style="font-size:13px;font-weight:600;color:#101828;">{nama}</div>
-                <div style="font-size:11px;color:#667085;">{user.get("email","")}</div>
+            <div style="display:flex;align-items:center;gap:10px;
+                        padding:.65rem .85rem;margin:.25rem .5rem .75rem;
+                        background:#F9FAFB;border-radius:8px;">
+                <div style="width:32px;height:32px;border-radius:50%;
+                            background:#E5E7EB;display:flex;align-items:center;
+                            justify-content:center;font-size:13px;font-weight:600;
+                            color:#374151;flex-shrink:0;">
+                    {initial}
+                </div>
+                <div style="overflow:hidden;">
+                    <div style="font-size:13px;font-weight:600;color:#111827;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {nama}
+                    </div>
+                    <div style="font-size:11px;color:#9CA3AF;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {email}
+                    </div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
-            # Menu items
-            st.markdown('<div class="rf-section" style="padding:0 .5rem;">Menu</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                '<div style="font-size:11px;font-weight:600;color:#9CA3AF;'
+                'text-transform:uppercase;letter-spacing:.06em;'
+                'padding:.25rem .85rem .4rem;">Menu</div>',
+                unsafe_allow_html=True
+            )
 
-            menu_items = [
-                ("dashboard", "🏠", "Dashboard"),
-                ("browse",    "🔍", "Cari Barang"),
-                ("lapor",     "➕", "Buat Laporan"),
-                ("laporanku", "📋", "Laporan Saya"),
+            menu = [
+                ("dashboard", "Dashboard"),
+                ("browse",    "Cari Barang"),
+                ("lapor",     "Buat Laporan"),
+                ("laporanku", "Laporan Saya"),
             ]
-
-            for key, icon, label in menu_items:
+            for key, label in menu:
                 active = st.session_state.page == key
-                style = (
-                    "background:#EBF4FF;color:#0074CC;font-weight:600;"
-                    if active else
-                    "color:#344054;font-weight:500;"
-                )
-                if st.button(
-                    f"{icon}  {label}",
-                    key=f"nav_{key}",
-                    use_container_width=True,
-                ):
-                    go_to(key)
-                # Override style via markdown setelah button
-                st.markdown(f"""
-                <style>
-                [data-testid="stButton"] button[kind="secondary"] {{
-                    text-align: left !important;
-                    justify-content: flex-start !important;
-                    border: none !important;
-                    background: transparent !important;
-                }}
-                </style>""", unsafe_allow_html=True)
+                if active:
+                    st.markdown(f"""
+                    <div style="background:#EFF6FF;border-radius:8px;
+                                padding:.55rem .85rem;margin:.15rem .5rem;
+                                font-size:14px;font-weight:600;color:#2563EB;
+                                cursor:default;">
+                        {label}
+                    </div>""", unsafe_allow_html=True)
+                    # Tombol invisible untuk tetap bisa diklik saat tidak active
+                else:
+                    if st.button(label, key=f"nav_{key}", use_container_width=True):
+                        go_to(key)
 
-            st.markdown("<hr style='border:none;border-top:1px solid #EAECF0;margin:1rem 0;'>",
-                        unsafe_allow_html=True)
-            st.markdown('<div class="rf-section" style="padding:0 .5rem;">Akun</div>',
-                        unsafe_allow_html=True)
-            if st.button("🚪  Keluar", use_container_width=True, key="nav_logout"):
-                logout()
+            st.markdown("""
+            <div style="border-top:1px solid #E5E7EB;margin:1rem .5rem .5rem;"></div>
+            <div style="font-size:11px;font-weight:600;color:#9CA3AF;
+                        text-transform:uppercase;letter-spacing:.06em;
+                        padding:.25rem .85rem .4rem;">Akun</div>
+            """, unsafe_allow_html=True)
+
+            if st.button("Akun", key="nav_akun", use_container_width=True):
+                pass  # placeholder
+
+            if st.button("Keluar", key="nav_logout", use_container_width=True):
+                st.session_state.token = None
+                st.session_state.user = None
+                st.session_state.page = "login"
+                st.rerun()
+
         else:
-            menu_items = [
-                ("login",    "🔑", "Masuk"),
-                ("register", "📝", "Daftar"),
-            ]
-            for key, icon, label in menu_items:
-                if st.button(f"{icon}  {label}", key=f"nav_{key}",
-                             use_container_width=True):
-                    go_to(key)
+            st.markdown(
+                '<div style="font-size:11px;font-weight:600;color:#9CA3AF;'
+                'text-transform:uppercase;letter-spacing:.06em;'
+                'padding:.25rem .85rem .4rem;">Akun</div>',
+                unsafe_allow_html=True
+            )
+            if st.button("Masuk", key="nav_login", use_container_width=True):
+                go_to("login")
+            if st.button("Daftar", key="nav_register", use_container_width=True):
+                go_to("register")
 
 
-# ── Router halaman ────────────────────────────────────────────────────────────
+# ── Router ────────────────────────────────────────────────────────────────────
 def render_page():
     page = st.session_state.page
-
-    # Halaman yang butuh login
     protected = {"dashboard", "browse", "lapor", "laporanku"}
     if page in protected and not st.session_state.token:
         go_to("login")
@@ -139,10 +151,8 @@ def render_page():
         from pages.laporanku import render
     else:
         from pages.dashboard import render
-
     render()
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
 render_sidebar()
 render_page()

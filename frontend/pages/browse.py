@@ -1,64 +1,57 @@
 import streamlit as st
 from utils.api import get_items
-from utils.style import badge_status, badge_tipe, KATEGORI_ICON
+from utils.style import KATEGORI_EMOJI, badge_tipe, badge_status
 from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
 
-KATEGORI_OPTIONS = ["", "elektronik", "dokumen", "pakaian", "aksesoris", "alat_tulis", "tas", "lainnya"]
-STATUS_OPTIONS   = ["", "aktif", "diproses", "selesai"]
-TIPE_OPTIONS     = ["", "hilang", "ditemukan"]
 
-
-def format_date(dt_str):
+def fmt_date(s):
     try:
-        return datetime.fromisoformat(dt_str).strftime("%d %b %Y")
+        return datetime.fromisoformat(s).strftime("%d %b %Y")
     except Exception:
-        return dt_str
+        return s
 
 
 def render():
     st.markdown("""
-    <div class="rf-page-header">
-        <div class="rf-page-title">🔍 Cari Barang</div>
+    <div style="margin-bottom:1.5rem;">
+        <div class="rf-page-title">Cari Barang</div>
         <div class="rf-page-sub">Temukan barang hilang atau yang sudah ditemukan di kampus ITS</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Filter bar ────────────────────────────────────────────────────────────
-    with st.container():
-        st.markdown('<div class="rf-card" style="padding:1rem 1.25rem;">', unsafe_allow_html=True)
-        f1, f2, f3, f4, f5 = st.columns([2.5, 1.5, 1.5, 1.5, 1])
+    # ── Filter ─────────────────────────────────────────────────────────────────
+    st.markdown('<div class="rf-card" style="padding:.85rem 1.25rem;">', unsafe_allow_html=True)
+    f1, f2, f3 = st.columns([3, 2, 2])
+    with f1:
+        search = st.text_input("", placeholder="Cari nama barang...",
+                               label_visibility="collapsed")
+    with f2:
+        tipe_label = st.selectbox("", ["Semua Tipe", "Hilang", "Ditemukan"],
+                                  label_visibility="collapsed")
+        tipe = "" if tipe_label == "Semua Tipe" else tipe_label.lower()
+    with f3:
+        kat_opts = {
+            "Semua Kategori": "",
+            "Elektronik": "elektronik",
+            "Dokumen": "dokumen",
+            "Pakaian": "pakaian",
+            "Aksesoris": "aksesoris",
+            "Alat Tulis": "alat_tulis",
+            "Tas": "tas",
+            "Lainnya": "lainnya",
+        }
+        kat_label = st.selectbox("", list(kat_opts.keys()),
+                                 label_visibility="collapsed")
+        kategori = kat_opts[kat_label]
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        with f1:
-            search = st.text_input("", placeholder="🔍  Cari nama barang...",
-                                   label_visibility="collapsed")
-        with f2:
-            tipe_label = st.selectbox("Tipe", ["Semua Tipe", "Hilang", "Ditemukan"],
-                                      label_visibility="collapsed")
-            tipe = "" if tipe_label == "Semua Tipe" else tipe_label.lower()
-        with f3:
-            kat_label = st.selectbox(
-                "Kategori",
-                ["Semua Kategori", "Elektronik", "Dokumen", "Pakaian",
-                 "Aksesoris", "Alat Tulis", "Tas", "Lainnya"],
-                label_visibility="collapsed"
-            )
-            kategori = "" if kat_label == "Semua Kategori" else kat_label.lower().replace(" ", "_")
-        with f4:
-            status_label = st.selectbox("Status", ["Semua Status", "Aktif", "Diproses", "Selesai"],
-                                        label_visibility="collapsed")
-            status = "" if status_label == "Semua Status" else status_label.lower()
-        with f5:
-            cari = st.button("Cari", use_container_width=True, type="primary")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ── Fetch data ────────────────────────────────────────────────────────────
-    with st.spinner("Memuat data..."):
+    # ── Fetch ──────────────────────────────────────────────────────────────────
+    with st.spinner("Memuat..."):
         items, code = get_items(
             tipe=tipe or None,
             kategori=kategori or None,
-            status=status or None,
             search=search or None,
             limit=50,
         )
@@ -67,10 +60,9 @@ def render():
         st.error("Gagal memuat data.")
         return
 
-    # ── Result count ──────────────────────────────────────────────────────────
     st.markdown(f"""
-    <div style="font-size:13px;color:#667085;margin:.75rem 0 1rem;">
-        Menampilkan <strong style="color:#101828;">{len(items)}</strong> laporan
+    <div style="font-size:13px;color:#6B7280;margin:.5rem 0 1rem;">
+        Menampilkan <strong style="color:#111827;">{len(items)}</strong> laporan
     </div>
     """, unsafe_allow_html=True)
 
@@ -78,59 +70,65 @@ def render():
         st.markdown("""
         <div class="rf-empty">
             <div class="rf-empty-icon">🔍</div>
-            <div class="rf-empty-text">Tidak ada hasil ditemukan</div>
-            <div class="rf-empty-sub">Coba ubah kata kunci atau filter pencarian</div>
+            <div class="rf-empty-text">Tidak ada hasil</div>
+            <div class="rf-empty-sub">Coba ubah kata kunci atau filter</div>
         </div>
         """, unsafe_allow_html=True)
         return
 
-    # ── Grid kartu barang ─────────────────────────────────────────────────────
-    cols_per_row = 3
-    for i in range(0, len(items), cols_per_row):
-        cols = st.columns(cols_per_row)
-        for j, col in enumerate(cols):
-            idx = i + j
-            if idx >= len(items):
-                break
-            item = items[idx]
-            with col:
-                icon = KATEGORI_ICON.get(item.get("kategori", ""), "📦")
-                foto_url = item.get("foto_url")
+    # ── Tabel ──────────────────────────────────────────────────────────────────
+    st.markdown('<div class="rf-table-wrap">', unsafe_allow_html=True)
 
-                # Foto atau placeholder
-                if foto_url:
-                    img_html = f'<img src="{BASE_URL}{foto_url}" class="rf-item-img" alt="foto">'
-                else:
-                    img_html = f'<div class="rf-item-img-placeholder">{icon}</div>'
+    h1, h2, h3, h4, h5 = st.columns([3, 3, 2, 2, 2])
+    for col, label in zip([h1,h2,h3,h4,h5],
+                          ["BARANG","LOKASI","KATEGORI","TIPE","TANGGAL"]):
+        with col:
+            st.markdown(f'<div class="rf-th">{label}</div>', unsafe_allow_html=True)
 
-                deskripsi = item.get("deskripsi") or "Tidak ada deskripsi"
-                if len(deskripsi) > 70:
-                    deskripsi = deskripsi[:70] + "..."
+    for i, item in enumerate(items):
+        emoji   = KATEGORI_EMOJI.get(item.get("kategori", ""), "📦")
+        tipe_v  = item.get("tipe", "")
+        is_last = i == len(items) - 1
+        border  = "none" if is_last else "1px solid #E5E7EB"
 
-                st.markdown(f"""
-                <div class="rf-item-card">
-                    {img_html}
-                    <div class="rf-item-body">
-                        <div class="rf-item-title">{item['nama_barang']}</div>
-                        <div class="rf-item-meta">📍 {item['lokasi']}</div>
-                        <div class="rf-item-meta">
-                            {icon} {item.get('kategori','').replace('_',' ').title()}
-                        </div>
-                        <div style="font-size:12px;color:#667085;margin-top:.4rem;
-                                    line-height:1.5;">{deskripsi}</div>
-                    </div>
-                    <div class="rf-item-footer">
-                        {badge_tipe(item.get('tipe',''))}
-                        {badge_status(item.get('status',''))}
-                    </div>
+        r1, r2, r3, r4, r5 = st.columns([3, 3, 2, 2, 2])
+        with r1:
+            st.markdown(f"""
+            <div style="padding:.7rem .9rem;border-bottom:{border};">
+                <div class="rf-td-name">{item['nama_barang']}</div>
+                <div class="rf-td-sub">
+                    {item.get('deskripsi','')[:50] + '...'
+                     if item.get('deskripsi') and len(item['deskripsi']) > 50
+                     else item.get('deskripsi','') or '-'}
                 </div>
-                """, unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
+        with r2:
+            st.markdown(f"""
+            <div style="padding:.7rem .9rem;border-bottom:{border};
+                        font-size:13px;color:#374151;">
+                {item['lokasi']}
+            </div>
+            """, unsafe_allow_html=True)
+        with r3:
+            st.markdown(f"""
+            <div style="padding:.7rem .9rem;border-bottom:{border};
+                        font-size:13px;color:#374151;">
+                {emoji} {item.get('kategori','').replace('_',' ').title()}
+            </div>
+            """, unsafe_allow_html=True)
+        with r4:
+            st.markdown(f"""
+            <div style="padding:.7rem .9rem;border-bottom:{border};">
+                {badge_tipe(tipe_v)}
+            </div>
+            """, unsafe_allow_html=True)
+        with r5:
+            st.markdown(f"""
+            <div style="padding:.7rem .9rem;border-bottom:{border};
+                        font-size:13px;color:#6B7280;">
+                {fmt_date(item.get('created_at',''))}
+            </div>
+            """, unsafe_allow_html=True)
 
-                # Info tambahan
-                st.markdown(f"""
-                <div style="font-size:11px;color:#667085;text-align:center;
-                            margin-top:4px;margin-bottom:.5rem;">
-                    👤 {item.get('owner',{}).get('nama','?')} •
-                    📅 {format_date(item.get('created_at',''))}
-                </div>
-                """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
