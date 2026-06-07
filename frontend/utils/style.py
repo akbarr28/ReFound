@@ -46,8 +46,8 @@ html, body, [class*="css"] {
 /* ── Tombol sidebar jadi nav items ───────────────────────────── */
 [data-testid="stSidebar"] .stButton > button {
     width: 100% !important;
-    text-align: left !important;
-    justify-content: flex-start !important;
+    text-align: center !important;
+    justify-content: center !important;
     background: transparent !important;
     border: none !important;
     border-radius: var(--radius) !important;

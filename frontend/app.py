@@ -3,12 +3,27 @@ from utils.style import GLOBAL_CSS
 
 st.set_page_config(
     page_title="ReFound — Lost & Found ITS",
-    page_icon="assets/logo.png" if False else "🔍",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+
+# CSS tambahan untuk sidebar nav
+st.markdown("""
+<style>
+/* Semua tombol sidebar rata tengah */
+[data-testid="stSidebar"] .stButton > button {
+    text-align: center !important;
+    justify-content: center !important;
+}
+/* Tombol aktif (div highlight) juga rata tengah */
+.rf-nav-active {
+    text-align: center !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ── Session state ─────────────────────────────────────────────────────────────
 for key, default in [("token", None), ("user", None), ("page", "dashboard")]:
@@ -43,8 +58,8 @@ def render_sidebar():
         """, unsafe_allow_html=True)
 
         if st.session_state.token:
-            user = st.session_state.user or {}
-            nama = user.get("nama", "User")
+            user  = st.session_state.user or {}
+            nama  = user.get("nama", "User")
             email = user.get("email", "")
             initial = nama[0].upper() if nama else "U"
 
@@ -72,6 +87,7 @@ def render_sidebar():
             </div>
             """, unsafe_allow_html=True)
 
+            # Label MENU
             st.markdown(
                 '<div style="font-size:11px;font-weight:600;color:#9CA3AF;'
                 'text-transform:uppercase;letter-spacing:.06em;'
@@ -88,18 +104,21 @@ def render_sidebar():
             for key, label in menu:
                 active = st.session_state.page == key
                 if active:
+                    # Aktif: highlight biru, teks tetap center via CSS
                     st.markdown(f"""
-                    <div style="background:#EFF6FF;border-radius:8px;
+                    <div class="rf-nav-active"
+                         style="background:#EFF6FF;border-radius:8px;
                                 padding:.55rem .85rem;margin:.15rem .5rem;
                                 font-size:14px;font-weight:600;color:#2563EB;
-                                cursor:default;">
+                                text-align:center;">
                         {label}
-                    </div>""", unsafe_allow_html=True)
-                    # Tombol invisible untuk tetap bisa diklik saat tidak active
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
                     if st.button(label, key=f"nav_{key}", use_container_width=True):
                         go_to(key)
 
+            # Divider + AKUN
             st.markdown("""
             <div style="border-top:1px solid #E5E7EB;margin:1rem .5rem .5rem;"></div>
             <div style="font-size:11px;font-weight:600;color:#9CA3AF;
@@ -108,12 +127,12 @@ def render_sidebar():
             """, unsafe_allow_html=True)
 
             if st.button("Akun", key="nav_akun", use_container_width=True):
-                pass  # placeholder
+                pass
 
             if st.button("Keluar", key="nav_logout", use_container_width=True):
                 st.session_state.token = None
-                st.session_state.user = None
-                st.session_state.page = "login"
+                st.session_state.user  = None
+                st.session_state.page  = "login"
                 st.rerun()
 
         else:
@@ -123,7 +142,7 @@ def render_sidebar():
                 'padding:.25rem .85rem .4rem;">Akun</div>',
                 unsafe_allow_html=True
             )
-            if st.button("Masuk", key="nav_login", use_container_width=True):
+            if st.button("Masuk",  key="nav_login",    use_container_width=True):
                 go_to("login")
             if st.button("Daftar", key="nav_register", use_container_width=True):
                 go_to("register")

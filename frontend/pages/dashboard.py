@@ -71,7 +71,8 @@ def render():
         )
         sorted_kat = sorted(stat_kat.items(), key=lambda x: -x[1])
         total = sum(stat_kat.values()) or 1
-        cols = st.columns(len(sorted_kat)) if len(sorted_kat) <= 4 else st.columns(4)
+        n = min(len(sorted_kat), 4)
+        cols = st.columns(n)
         for i, (kat, jumlah) in enumerate(sorted_kat[:4]):
             emoji = KATEGORI_EMOJI.get(kat, "📦")
             pct = int(jumlah / total * 100)
@@ -104,7 +105,7 @@ def render():
         unsafe_allow_html=True
     )
 
-    # Header
+    # Header — kolom TIPE sekarang menampilkan kategori barang
     h1, h2, h3, h4 = st.columns([3, 3, 2, 2])
     for col, label in zip([h1, h2, h3, h4], ["BARANG", "TIPE", "STATUS", "TANGGAL"]):
         with col:
@@ -112,11 +113,12 @@ def render():
 
     if laporan:
         for i, item in enumerate(laporan):
-            emoji = KATEGORI_EMOJI.get(item.get("kategori", ""), "📦")
-            tipe = item.get("tipe", "")
-            status = item.get("status", "")
+            emoji   = KATEGORI_EMOJI.get(item.get("kategori", ""), "📦")
+            kategori_label = item.get("kategori", "").replace("_", " ").title()
+            tipe    = item.get("tipe", "")
+            status  = item.get("status", "")
             is_last = i == len(laporan) - 1
-            border = "none" if is_last else "1px solid #E5E7EB"
+            border  = "none" if is_last else "1px solid #E5E7EB"
 
             r1, r2, r3, r4 = st.columns([3, 3, 2, 2])
             with r1:
@@ -127,11 +129,11 @@ def render():
                 </div>
                 """, unsafe_allow_html=True)
             with r2:
+                # TIPE = kategori barang (elektronik, tas, dll)
                 st.markdown(f"""
-                <div style="padding:.7rem .9rem;border-bottom:{border};">
-                    <div class="rf-td" style="padding:0;">
-                        {item['lokasi']}
-                    </div>
+                <div style="padding:.7rem .9rem;border-bottom:{border};
+                            font-size:13px;color:#374151;">
+                    {emoji} {kategori_label}
                 </div>
                 """, unsafe_allow_html=True)
             with r3:
@@ -158,15 +160,17 @@ def render():
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("<div style='margin-top:1.25rem;'></div>", unsafe_allow_html=True)
 
-    # ── Quick actions ─────────────────────────────────────────────────────────
+    # ── Quick actions — biru & hijau ──────────────────────────────────────────
     qa1, qa2 = st.columns(2)
     with qa1:
-        if st.button("Laporkan Kehilangan", use_container_width=True, type="primary"):
+        if st.button("Laporkan Kehilangan", use_container_width=True, type="primary",
+                     key="btn_hilang"):
             st.session_state.prefill_tipe = "hilang"
             st.session_state.page = "lapor"
             st.rerun()
     with qa2:
-        if st.button("Laporkan Penemuan", use_container_width=True):
+        if st.button("Laporkan Penemuan", use_container_width=True, type="primary",
+                     key="btn_ditemukan"):
             st.session_state.prefill_tipe = "ditemukan"
             st.session_state.page = "lapor"
             st.rerun()
