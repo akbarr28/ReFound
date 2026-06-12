@@ -11,13 +11,12 @@ def fmt_date(s):
         return s
 
 
-def get_foto_url(foto_url: str) -> str:
-    """Normalize foto URL — bisa full URL (Supabase) atau path lokal."""
+def get_foto_url(foto_url: str):
     if not foto_url:
         return None
     if foto_url.startswith("http"):
-        return foto_url  # sudah full URL dari Supabase
-    return f"{BASE_URL}{foto_url}"  # path lokal: /uploads/xxx.jpg
+        return foto_url
+    return f"{BASE_URL}{foto_url}"
 
 
 def render():
@@ -28,7 +27,7 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
-    # Search + Filter 
+    # ── Search + Filter ───────────────────────────────────────────────────────
     sb1, sb2 = st.columns([4, 1])
     with sb1:
         search = st.text_input(
@@ -60,7 +59,7 @@ def render():
     tipe     = "" if tipe_label == "Semua" else tipe_label.lower()
     kategori = kat_opts.get(kat_label, "")
 
-    # Fetch 
+    # ── Fetch ─────────────────────────────────────────────────────────────────
     with st.spinner("Memuat..."):
         items, code = get_items(
             tipe=tipe or None,
@@ -89,7 +88,7 @@ def render():
     </div>
     """, unsafe_allow_html=True)
 
-    # Grid 4 kolom 
+    # ── Grid 4 kolom ──────────────────────────────────────────────────────────
     cols_per_row = 4
     for i in range(0, len(items), cols_per_row):
         cols = st.columns(cols_per_row)
@@ -97,53 +96,55 @@ def render():
             idx = i + j
             if idx >= len(items):
                 break
-            item = items[idx]
-            with cols[j]:
-                tipe_v      = item.get("tipe", "")
-                emoji       = KATEGORI_EMOJI.get(item.get("kategori", ""), "📦")
-                foto_url    = get_foto_url(item.get("foto_url"))
-                badge_color = "#DC2626" if tipe_v == "hilang" else "#16A34A"
-                badge_label = tipe_v.capitalize()
+            item     = items[idx]
+            tipe_v   = item.get("tipe", "")
+            emoji    = KATEGORI_EMOJI.get(item.get("kategori", ""), "📦")
+            foto_url = get_foto_url(item.get("foto_url"))
+            badge_color = "#DC2626" if tipe_v == "hilang" else "#16A34A"
+            badge_label = tipe_v.capitalize()
+            nama    = item.get("nama_barang", "")
+            lokasi  = item.get("lokasi", "")
+            tanggal = fmt_date(item.get("created_at", ""))
 
+            with cols[j]:
+                # Foto — pakai st.image() agar tidak kena CSP block
                 if foto_url:
-                    st.markdown(f"""
-                    <div style="border-radius:10px;overflow:hidden;
-                                border:1px solid #E5E7EB;margin-bottom:0;">
-                        <img src="{foto_url}"
-                             style="width:100%;height:175px;object-fit:cover;display:block;"
-                             onerror="this.parentElement.innerHTML='<div style=height:175px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:44px;>{emoji}</div>'">
-                    </div>
-                    """, unsafe_allow_html=True)
+                    try:
+                        st.image(foto_url, use_column_width=True)
+                    except Exception:
+                        st.markdown(f"""
+                        <div style="height:175px;background:#F3F4F6;border-radius:10px;
+                                    border:1px solid #E5E7EB;display:flex;
+                                    align-items:center;justify-content:center;
+                                    font-size:44px;">
+                            {emoji}
+                        </div>
+                        """, unsafe_allow_html=True)
                 else:
                     st.markdown(f"""
                     <div style="height:175px;background:#F3F4F6;border-radius:10px;
                                 border:1px solid #E5E7EB;display:flex;
                                 align-items:center;justify-content:center;
-                                font-size:44px;margin-bottom:0;">
+                                font-size:44px;">
                         {emoji}
                     </div>
                     """, unsafe_allow_html=True)
 
-                nama   = item.get("nama_barang", "")
-                lokasi = item.get("lokasi", "")
-                tanggal = fmt_date(item.get("created_at", ""))
-
+                # Info barang
                 st.markdown(f"""
-                <div style="padding:.6rem .25rem .9rem;">
+                <div style="padding:.4rem .1rem .75rem;">
                     <div style="font-size:14px;font-weight:600;color:#111827;
-                                margin-bottom:.3rem;white-space:nowrap;
+                                margin-bottom:.25rem;white-space:nowrap;
                                 overflow:hidden;text-overflow:ellipsis;">
                         {nama}
                     </div>
                     <div style="font-size:12px;color:#6B7280;
-                                display:flex;align-items:center;gap:4px;
-                                margin-bottom:.25rem;white-space:nowrap;
-                                overflow:hidden;text-overflow:ellipsis;">
-                        <span>📍</span>
-                        <span style="overflow:hidden;text-overflow:ellipsis;">{lokasi}</span>
+                                white-space:nowrap;overflow:hidden;
+                                text-overflow:ellipsis;margin-bottom:.25rem;">
+                        📍 {lokasi}
                     </div>
                     <div style="display:flex;align-items:center;
-                                justify-content:space-between;margin-top:.35rem;">
+                                justify-content:space-between;">
                         <span style="font-size:12px;color:#9CA3AF;">{tanggal}</span>
                         <span style="background:{badge_color};color:#fff;
                                      font-size:11px;font-weight:600;
@@ -154,4 +155,4 @@ def render():
                 </div>
                 """, unsafe_allow_html=True)
 
-        st.markdown("<div style='margin-bottom:.25rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-bottom:.5rem;'></div>", unsafe_allow_html=True)
