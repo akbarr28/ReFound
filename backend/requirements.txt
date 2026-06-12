@@ -8,4 +8,5 @@ bcrypt==4.0.1
 python-multipart
 python-dotenv
 pydantic[email]
-supabase==2.3.0
+supabase==1.2.0
+
