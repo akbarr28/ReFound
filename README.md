@@ -3,6 +3,7 @@
 Platform digital berbasis web untuk pelaporan barang hilang dan penemuan barang di lingkungan kampus Institut Teknologi Sepuluh Nopember (ITS).
 
 ---
+- Deployment link: https://refound-swhtokmvwqhokcsmnc3g2b.streamlit.app/
 
 ## Daftar Isi
 
